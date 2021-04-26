@@ -119,6 +119,15 @@ class PasswordGenerator {
                 return true;
             }
         }
+        bool hasNext(){
+            if(tokensList.beginning != tokensList.end()) && (tokensList.beginning == --tokensList.end()){
+                return false;
+            }
+            else{
+                return true;
+            }
+    }
+}
 
         
 
