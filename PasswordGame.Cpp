@@ -5,8 +5,9 @@
 #include <fstream>
 #include <cctype>
 #include <cstdio>
-#include <algorithm>
 #include <ctime>
+#include <algorithm>
+#include <vector>
 
 using namespace std;
 
@@ -97,11 +98,11 @@ class PasswordGenerator {
         PasswordGenerator (list<string> tokens) {
             tokensList = tokens;
             iterationLength = 0;
+            origFront = tokensList.front();
         }
 
         string getRandomPassword(int numWords) {
             list<string> *paramList = new list<string>(tokensList);
-
             string returnString (passwordHelper(paramList, numWords));
 
 
@@ -116,46 +117,48 @@ class PasswordGenerator {
             }
             else {
                 iterationLength = numWords;
+                initializePassword();
                 return true;
             }
         }
-        string next() {
-            int j = 0;
-            string foundPassword;
-            string passwordArr[iterationLength];
-            while(j < iterationLength){
-                for(tokensList.begin(); tokensList.begin() != tokensList.end(); ++tokensList.begin()){
-                    if(*tokensList.begin(); == passwordArr[j]){
-                        if(j == iterationLength - 1){
-                            foundPassword = foundPassword + passwordArr[j];
-                }
-                else {
-                    foundPassword = foundPassword + passwordArr[j] + " ";
-                }
-            }
-        }
-        j++;
-    }
-    cout <<"The password is: " << foundPassword << "\n";
 
-    return foundPassword;
-};
-        bool hasNext(){
-            if(tokensList.begin() != tokensList.end()) && (tokensList.begin() == --tokensList.end()){
+        string next () {
+            string returnString("");
+
+            for (list<string>::iterator i = currPassword.begin(); i != currPassword.end(); ++i) {
+                returnString.append(*i +" ");
+            }
+
+            if (globalIterator != tokensList.end()) {
+                returnString.append(*globalIterator +" ");
+                ++globalIterator;
+            }
+            else {
+                tokensList.push_back(currPassword.back());
+                currPassword.pop_back();
+                initializePassword();
+            }
+            
+            return returnString;
+        }
+
+        bool hasNext () {
+            if(origFront.compare(tokensList.front()) != 0) {
+                return true;
+            }
+            else {
                 return false;
             }
-            else{
-                return true;
-            }
-    }
-}
 
-        
+        }
+
 
     private:
-        int iterationLength;
+        list<string> currPassword;
         list<string> tokensList;
-        list<string>* nextHelper; //Only instanciated in the next method
+        list<string>::iterator globalIterator;
+        string origFront;
+        int iterationLength;
 
         string passwordHelper (list<string> *&paramList, int numWords) {
             srand((unsigned) time(0)); //Makes it so that seeding is random every run
@@ -178,6 +181,14 @@ class PasswordGenerator {
             }
             return returnString;
         }
+
+        void initializePassword () {
+            for (int i = currPassword.size(); i < (iterationLength - 1); ++i) {
+                currPassword.push_back(tokensList.front());
+                tokensList.pop_front();
+            }
+            globalIterator = tokensList.begin();
+        }
 };
 
 int main (int argc, char **argv) {
@@ -186,14 +197,18 @@ int main (int argc, char **argv) {
     }
     else {
         int numTokens;
-        TokenDetector test("testFile.txt");
+        TokenDetector test(argv[1]);
         delete argv;
 
         cout << "Enter number of tokens to use in password: ";
         cin >> numTokens;
 
         PasswordGenerator* generator = new PasswordGenerator(test.getUnique());
-        cout << generator->getRandomPassword(numTokens) << endl;
+        generator->setIterationLength(numTokens);
+
+        while(generator->hasNext()) {
+            cout << generator -> next() << endl;
+        }
 
         delete generator;
     }
