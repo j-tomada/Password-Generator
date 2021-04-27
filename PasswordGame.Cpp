@@ -119,8 +119,29 @@ class PasswordGenerator {
                 return true;
             }
         }
+        string next() {
+            int j = 0;
+            string foundPassword;
+            string passwordArr[iterationLength];
+            while(j < iterationLength){
+                for(tokensList.begin(); tokensList.begin() != tokensList.end(); ++tokensList.begin()){
+                    if(*tokensList.begin(); == passwordArr[j]){
+                        if(j == iterationLength - 1){
+                            foundPassword = foundPassword + passwordArr[j];
+                }
+                else {
+                    foundPassword = foundPassword + passwordArr[j] + " ";
+                }
+            }
+        }
+        j++;
+    }
+    cout <<"The password is: " << foundPassword << "\n";
+
+    return foundPassword;
+};
         bool hasNext(){
-            if(tokensList.beginning != tokensList.end()) && (tokensList.beginning == --tokensList.end()){
+            if(tokensList.begin() != tokensList.end()) && (tokensList.begin() == --tokensList.end()){
                 return false;
             }
             else{
