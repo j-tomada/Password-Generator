@@ -1,10 +1,15 @@
+/**
+ * Program reads in a textFile from the command line and outputs an outo generated
+ * password based off of words from the text
+ * Utilizes three separate classes in order to accomplish tasks
+ * One of the classes is also used to guess the auto generated password using two different methods
+ * @authors Joseph Tomada (Sec 02) , Jeiko Santos (Sec 02)
+ * @date 04/28/2021
+ */
 #include <iostream>
-#include <random>
 #include <list>
 #include <string>
 #include <fstream>
-#include <cctype>
-#include <cstdio>
 #include <ctime>
 #include <algorithm>
 
@@ -38,7 +43,6 @@ class TokenDetector {
                         tokensList.push_back(preToken);
                     }
                 }
-                printList();
         }
 
         /**
@@ -54,7 +58,7 @@ class TokenDetector {
          * Used to ensure iterationLength does not go above the size
          */
         int getSize () {
-            return tokensList.size();
+            return tokensList.size ();
         }
 
         /**
@@ -148,7 +152,7 @@ class PasswordGenerator {
         PasswordGenerator (list<string> tokens) {
             tokensList = tokens;
             iterationLength = 0;
-            passwordPointer = new list<string>();
+            prevPointer = new list<string>();
             isFinished = false;
             listCopy = new list<string>(tokensList);
         }
@@ -160,16 +164,16 @@ class PasswordGenerator {
         PasswordGenerator (PasswordGenerator &copy) {
             tokensList = copy.tokensList;
             iterationLength = copy.iterationLength;
-            passwordPointer = copy.passwordPointer;
+            prevPointer = copy.prevPointer;
             isFinished = copy.isFinished;
             listCopy = copy.listCopy;
         }
         /**
          * Destructor
-         * Destroys passwordPointer and listCopy
+         * Destroys prevPointer and listCopy
          */
         ~PasswordGenerator () {
-            delete passwordPointer;
+            delete prevPointer;
             delete listCopy;
         }
 
@@ -238,7 +242,7 @@ class PasswordGenerator {
 
 
     private:
-        list<string>* passwordPointer; //This lists points to the previous password Iteration
+        list<string>* prevPointer; //This lists points to the previous password Iteration
         list<string> currPassword; //List of the currentPassword being returned by next()
         list<string> tokensList; //List of original tokens
         list<string>* listCopy; //Copy and pointer of tokensList
@@ -283,8 +287,8 @@ class PasswordGenerator {
          */
         void initializePassword () {
             for (int i = currPassword.size(); i < (iterationLength - 1); ++i) {
-                if (currPassword.size() == passwordPointer->size()) {
-                    passwordPointer->push_back(listCopy->front());
+                if (currPassword.size() == prevPointer->size()) {
+                    prevPointer->push_back(listCopy->front());
                 }
                 currPassword.push_back(listCopy->front());
                 listCopy->pop_front();
@@ -293,23 +297,27 @@ class PasswordGenerator {
         }
 
         /**
-         * method checks to see if any of the passwordPointers have been reached
+         * method checks to see if any of the prevPointers have been reached
          * A pointer is reached when one part of the list matches the front of listCopy
          * When there is a match, this signifies that next() has looped through all of the possible
          * combinations on that part of currPassword
          */
         void checkingPassword () {
-            listCopy->push_back(currPassword.back());
-            currPassword.pop_back();
+            if (currPassword.size() > 0) {
+                listCopy->push_back(currPassword.back());
+                currPassword.pop_back();
+            }
+            else {
+                return;
+            }
 
-            if (listCopy->front().compare(passwordPointer->back()) == 0) {
+            if (listCopy->front().compare(prevPointer->back()) == 0) {
 
-                if(passwordPointer->size() == 1) {
+                if(prevPointer->size() == 1) {
                     isFinished = true;
-                    return;
                 }
 
-                passwordPointer->pop_back();
+                prevPointer->pop_back();
                 checkingPassword();
                 return;
             }
@@ -322,6 +330,7 @@ class PasswordGenerator {
  * is created
  * Runs both methods of guessing the password together in a while loop
  * when one of the methods has produced the given password, the method stops
+ * Will not run on multiple threads to accout for computer differences
  */
 class PasswordGuesser {
     public:
@@ -349,13 +358,18 @@ class PasswordGuesser {
          */
         void performCalculation (string password, int iterationLength, PasswordGenerator &generator) {
             while (generator.hasNext()) {
-                if (generator.next().compare(password) == 0) {
+                string brute (generator.next());
+                string random (generator.getRandomPassword(iterationLength));
+
+                if (brute.compare(password) == 0) {
                     cout << "The brute force method solved it first" << endl;
+                    cout << "The password was: " << brute << endl;
                     return;
                 }
 
-                if (generator.getRandomPassword(iterationLength).compare(password) == 0) {
+                if (random.compare(password) == 0) {
                     cout << "The requesting random passwords method solved it first" << endl;
+                    cout << "The password was: " << random << endl;
                     return;
                 }
             }
@@ -371,23 +385,26 @@ int main (int argc, char **argv) {
         fstream file;
 
         file.open(argv[1], ios::in);
-        if (file.is_open()) {
+        if (file.is_open()) { //Returns true if file is found; false if not
             TokenDetector tokenExtractor(file);
             PasswordGenerator passwordGen(tokenExtractor.getUnique());
             int numWords;
 
             cout << "Enter in the number of words needed for the password: " << endl;
-            cin >> numWords;
-
-            if (numWords <= tokenExtractor.getSize()) { //Will check to see it the length of password exceeds the number of tokens available
-                passwordGen.setIterationLength(numWords);
-                string password (passwordGen.getRandomPassword(numWords));
-                cout << password << endl;
-
-                PasswordGuesser guesser (password, numWords, passwordGen);
+            cin >> numWords; //userInput
+            
+            if (numWords > 0 && numWords < 6) { //numWord must be 1 - 5
+                if(numWords <= tokenExtractor.getSize()) { //Also checks if it exceeds the number of tokens available
+                    passwordGen.setIterationLength(numWords);
+                    string password (passwordGen.getRandomPassword(numWords));
+                    PasswordGuesser guesser (password, numWords, passwordGen);
+                }
+                else {
+                cout << "The number of words exceeds the number of tokens" << endl;
+                }
             }
             else {
-                cout << "ERROR: the number of words exceeds the number of tokens" << endl;
+                cout << "Enter a number between 1 and 5" << endl;
             }
     
         }
@@ -395,7 +412,7 @@ int main (int argc, char **argv) {
             cout << "ERROR: file " << argv[1] << " does not exist" << endl;
         }
 
-        file.close();
+        file.close(); //ensures file is always closed
     }
 
     return 0;
